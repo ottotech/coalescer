@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/machinebox/sdk-go/facebox"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
@@ -40,9 +41,13 @@ func main() {
 }
 
 func run(c *config) error {
-	// Let's walk through the people dir and get the people picture
+	// Let's walk through the people's dir and get the people's pictures
 	// that we are going to recognize.
 	err := filepath.Walk(c.PeopleDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if info.Name() == c.PeopleDir {
 			return nil
 		}
@@ -81,5 +86,23 @@ func run(c *config) error {
 	if err != nil {
 		return err
 	}
+
+	faceboxClient := facebox.New("http://localhost:8080")
+
+	for name, paths := range c.People {
+		for _, p := range paths {
+			img, err := os.Open(p)
+			if err != nil {
+				return err
+			}
+			filename := filepath.Base(p)
+			err = faceboxClient.Teach(img, filename, name)
+			if err != nil {
+				return err
+			}
+			img.Close()
+		}
+	}
+
 	return nil
 }
