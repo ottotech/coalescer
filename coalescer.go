@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,10 +9,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"io/ioutil"
 	"log"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +25,7 @@ var _logger = log.New(os.Stdout, "logger: ", log.Llongfile)
 var fbox *facebox.Client
 
 func main() {
-	// Let's parse the flags
+	// Let's parse the flags.
 	conf, output, err := parseFlags(os.Args[0], os.Args[1:])
 	if err == flag.ErrHelp {
 		fmt.Println(output)
@@ -131,7 +126,7 @@ func run(c *config) error {
 	defer close(done)
 
 	paths, errc := walkFiles(done, c.PicsDir)
-	ch := make(chan result) // HLc
+	ch := make(chan result)
 	var wg sync.WaitGroup
 	const numDigesters = 20
 	wg.Add(numDigesters)
@@ -167,10 +162,8 @@ type result struct {
 func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) {
 	paths := make(chan string)
 	errc := make(chan error, 1)
-	go func() { // HL
-		// Close the paths channel after Walk returns.
-		defer close(paths) // HL
-		// No select needed for this send, since errc is buffered.
+	go func() {
+		defer close(paths)
 		errc <- filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -217,11 +210,20 @@ func RecognizeAndMove(conf *config, path string) error {
 		return fmt.Errorf("file is not of type jpeg not png")
 	}
 
-	//faces, err := fbox.Check(file)
-	//if err != nil {
-	//	return err
-	//}
-	faces, err := IdentifyFace(file, filepath.Base(path))
+	// We need to rewind the file.
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return err
+	}
+
+	// Let's get the faces in the photo.
+	faces, err := fbox.Check(file)
+	if err != nil {
+		return err
+	}
+
+	// We need to rewind the file.
+	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
@@ -242,71 +244,4 @@ func RecognizeAndMove(conf *config, path string) error {
 		}
 	}
 	return nil
-}
-
-func IdentifyFace(img io.Reader, filename string) ([]facebox.Face, error) {
-	body := bytes.NewBuffer(nil)
-	writer := multipart.NewWriter(body)
-	imgWriter, err := writer.CreateFormFile("file", filename)
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.Copy(imgWriter, img)
-	if err != nil {
-		return nil, err
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, err
-	}
-	client := http.Client{}
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8080/facebox/check", body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json; charset=utf-8")
-	req.Header.Add("Content-Type", writer.FormDataContentType())
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		resErrData := struct {
-			Success bool   `json:"success"`
-			Error   string `json:"error"`
-		}{}
-		sb, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			_logger.Println(err)
-			return nil, err
-		}
-		fmt.Println(string(sb))
-		err = json.Unmarshal(sb, &resErrData)
-		if err != nil {
-			_logger.Println(err)
-			return nil, err
-		}
-		return nil, fmt.Errorf(resErrData.Error)
-	}
-
-	resData := struct {
-		Success   bool           `json:"success"`
-		FaceCount int            `json:"faceCount"`
-		Faces     []facebox.Face `json:"faces"`
-	}{}
-
-	sb, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		_logger.Println(err)
-		return nil, err
-	}
-	err = json.Unmarshal(sb, &resData)
-	if err != nil {
-		_logger.Println(err)
-		return nil, err
-	}
-
-	return resData.Faces, nil
 }
