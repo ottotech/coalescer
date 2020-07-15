@@ -50,8 +50,7 @@ func main() {
 }
 
 func run(c *config) error {
-	// Let's walk through the people's dir and get the people's pictures
-	// that we are going to recognize.
+	// Let's walk through the people's dir and get the people's pictures that we want to recognize.
 	err := filepath.Walk(c.PeopleDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -185,7 +184,7 @@ func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) 
 
 func digester(conf *config, done <-chan struct{}, paths <-chan string, c chan<- result) {
 	for path := range paths {
-		err := RecognizeAndMove(conf, path)
+		err := recognizeAndCopy(conf, path)
 		select {
 		case c <- result{path, err}:
 		case <-done:
@@ -194,7 +193,7 @@ func digester(conf *config, done <-chan struct{}, paths <-chan string, c chan<- 
 	}
 }
 
-func RecognizeAndMove(conf *config, path string) error {
+func recognizeAndCopy(conf *config, path string) error {
 	fullPath := filepath.Join(conf.WorkingDir, path)
 	file, err := os.Open(fullPath)
 	if err != nil {
@@ -210,7 +209,7 @@ func RecognizeAndMove(conf *config, path string) error {
 		return fmt.Errorf("file is not of type jpeg not png")
 	}
 
-	// We need to rewind the file.
+	// We need to rewind the file so it can be read in other functions.
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
@@ -222,7 +221,7 @@ func RecognizeAndMove(conf *config, path string) error {
 		return err
 	}
 
-	// We need to rewind the file.
+	// We need to rewind the file so it can be read in other functions.
 	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
