@@ -14,11 +14,14 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
-	peopleDirFlagName = "peopledir"
-	picsDirFlagName   = "picsdir"
+	peopleDirFlagName      = "peopledir"
+	picsDirFlagName        = "picsdir"
+	faceboxUrlFlagName     = "faceboxurl"
+	coolDownPeriodFlagName = "cooldown"
 )
 
 var _logger = log.New(os.Stdout, "logger: ", log.Llongfile)
@@ -41,7 +44,13 @@ func main() {
 	}
 
 	// Let's connect to facebox.
-	fbox = facebox.New("http://localhost:8080")
+	fbox = facebox.New(conf.FaceboxUrl)
+
+	// Let's test the connection.
+	_, err = fbox.Info()
+	if err != nil {
+		_logger.Fatalln(err)
+	}
 
 	// Let's run the application.
 	if err := run(conf); err != nil {
@@ -50,7 +59,60 @@ func main() {
 }
 
 func run(c *config) error {
-	// Let's walk through the people's dir and get the people's pictures that we want to recognize.
+	// Let's collect the people's pictures that we want to recognize.
+	err := collectPeoplePics(c)
+	if err != nil {
+		return err
+	}
+
+	// Let's create the folders for the pictures of the people we want to filter.
+	err = createFoldersForPeople(c)
+	if err != nil {
+		return err
+	}
+
+	// Let's teach facebox about the people we want to recognize.
+	err = teachFacebox(c)
+	if err != nil {
+		return err
+	}
+
+	done := make(chan struct{})
+	defer close(done)
+
+	paths, errc := walkFiles(done, c.PicsDir)
+	ch := make(chan result)
+	var wg sync.WaitGroup
+	const numDigesters = 20
+	wg.Add(numDigesters)
+	for i := 0; i < numDigesters; i++ {
+		go func() {
+			digester(c, done, paths, ch)
+			wg.Done()
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for r := range ch {
+		fmt.Println(r.path)
+		fmt.Println(r.err)
+	}
+
+	if err := <-errc; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// collectPeoplePics walks through the people's dir and get the people's pictures that we want
+// to recognize, and stores the people's name and file path in the *config.People map. Where
+// the key is the name of a person and the value a slice with the pictures filename of that person.
+func collectPeoplePics(c *config) error {
 	err := filepath.Walk(c.PeopleDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -91,11 +153,13 @@ func run(c *config) error {
 		return nil
 	})
 
-	if err != nil {
-		return err
-	}
+	return err
+}
 
-	// Let's create the folders for the pictures of the people we want to filter.
+// createFoldersForPeople will create folders in current dir
+// where we are going to store the pictures of the people we want
+// to filter out from picsDirFlagName dir.
+func createFoldersForPeople(c *config) error {
 	for k, _ := range c.People {
 		path := filepath.Join(c.WorkingDir, k)
 		err := os.MkdirAll(path, 0755)
@@ -103,8 +167,13 @@ func run(c *config) error {
 			return err
 		}
 	}
+	return nil
+}
 
-	// Let's teach facebox how to recognize the people we want to filter out from our pictures directory.
+// teachFacebox will teach facebox instance about the people we want to recognize.
+// If the coolDownPeriodFlagName is true, we will wait five seconds to give enough
+// time to facebox to assimilate the pictures.
+func teachFacebox(c *config) error {
 	for name, paths := range c.People {
 		for _, p := range paths {
 			fullPath := filepath.Join(c.WorkingDir, c.PeopleDir, p)
@@ -121,33 +190,9 @@ func run(c *config) error {
 		}
 	}
 
-	done := make(chan struct{})
-	defer close(done)
-
-	paths, errc := walkFiles(done, c.PicsDir)
-	ch := make(chan result)
-	var wg sync.WaitGroup
-	const numDigesters = 20
-	wg.Add(numDigesters)
-	for i := 0; i < numDigesters; i++ {
-		go func() {
-			digester(c, done, paths, ch)
-			wg.Done()
-		}()
-	}
-
-	go func() {
-		wg.Wait()
-		close(ch)
-	}()
-
-	for r := range ch {
-		fmt.Println(r.path)
-		fmt.Println(r.err)
-	}
-
-	if err := <-errc; err != nil {
-		return err
+	// if user wants to have the cooldown period, we sleep for 5 secs.
+	if c.CoolDownPeriod {
+		time.Sleep(time.Second * 5)
 	}
 
 	return nil

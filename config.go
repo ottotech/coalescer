@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 )
 
@@ -15,10 +16,12 @@ func (p PeopleToIdentify) exists(name string) bool {
 }
 
 type config struct {
-	PeopleDir  string
-	PicsDir    string
-	People     PeopleToIdentify
-	WorkingDir string
+	PeopleDir      string
+	PicsDir        string
+	People         PeopleToIdentify
+	WorkingDir     string
+	FaceboxUrl     string
+	CoolDownPeriod bool
 }
 
 func newConfig() (*config, error) {
@@ -63,6 +66,15 @@ func (c *config) Validate() (ok bool, msg string) {
 		ok = false
 		msg += fmt.Sprintf("directory %s specified by the flag %s is not a directory.\n", c.PicsDir, picsDirFlagName)
 	}
+	if u, err := url.Parse(c.FaceboxUrl); err != nil {
+		ok = false
+		msg += fmt.Sprintf("got this error while parsing the FaceboxUrl: %s", err)
+	} else {
+		if u.Scheme == "" || u.Host == "" {
+			ok = false
+			msg += fmt.Sprint("malformed FaceboxUrl. try something like: http://localhost:8080")
+		}
+	}
 	if !ok {
 		msg += "For more information about the flags of this program, please run ./coalescer -h"
 	}
@@ -81,6 +93,8 @@ func parseFlags(programName string, args []string) (conf *config, output string,
 
 	flags.StringVar(&c.PeopleDir, peopleDirFlagName, "", "directory where we can find the photos of the people we want to recognize")
 	flags.StringVar(&c.PicsDir, picsDirFlagName, "", "directory where we can find all the photos we want to filter based on the people we want to recognize in peopledir")
+	flags.StringVar(&c.FaceboxUrl, faceboxUrlFlagName, "", "url pointing to your facebox machine instance")
+	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlagName, false, "if cooldown is true, coalescer will could down 5 seconds to let facebox assimilate the people's pictures")
 
 	err = flags.Parse(args)
 	if err != nil {
