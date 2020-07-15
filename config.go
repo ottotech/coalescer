@@ -9,14 +9,28 @@ import (
 
 type PeopleToIdentify map[string][]string
 
-type config struct {
-	PeopleDir string
-	PicsDir   string
-	People    PeopleToIdentify
+func (p PeopleToIdentify) exists(name string) bool {
+	_, exists := p[name]
+	return exists
 }
 
-func newConfig() *config {
-	return &config{People: make(PeopleToIdentify)}
+type config struct {
+	PeopleDir  string
+	PicsDir    string
+	People     PeopleToIdentify
+	WorkingDir string
+}
+
+func newConfig() (*config, error) {
+	wdir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	c := &config{
+		People:     make(PeopleToIdentify),
+		WorkingDir: wdir,
+	}
+	return c, nil
 }
 
 func (c *config) Validate() (ok bool, msg string) {
@@ -60,7 +74,11 @@ func parseFlags(programName string, args []string) (conf *config, output string,
 	var buf bytes.Buffer
 	flags.SetOutput(&buf)
 
-	c := newConfig()
+	c, err := newConfig()
+	if err != nil {
+		return nil, buf.String(), err
+	}
+
 	flags.StringVar(&c.PeopleDir, peopleDirFlagName, "", "directory where we can find the photos of the people we want to recognize")
 	flags.StringVar(&c.PicsDir, picsDirFlagName, "", "directory where we can find all the photos we want to filter based on the people we want to recognize in peopledir")
 
