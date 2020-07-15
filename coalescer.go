@@ -206,7 +206,7 @@ func recognizeAndCopy(conf *config, path string) error {
 	}
 
 	if format != "jpeg" && format != "png" {
-		return fmt.Errorf("file is not of type jpeg not png")
+		return fmt.Errorf("file is not of type jpeg nor png")
 	}
 
 	// We need to rewind the file so it can be read in other functions.
@@ -227,6 +227,7 @@ func recognizeAndCopy(conf *config, path string) error {
 		return err
 	}
 
+	// We will loop through the recognized faces and check if there is a match.
 	for _, face := range faces {
 		if face.Matched && conf.People.exists(face.Name) {
 			nfPath := filepath.Join(conf.WorkingDir, face.Name, filepath.Base(path))
