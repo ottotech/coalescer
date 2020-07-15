@@ -17,11 +17,13 @@ import (
 	"time"
 )
 
+// constant variables that represent the names of the flags that we are going to
+// user in config and throughout the entire program.
 const (
-	peopleDirFlagName      = "peopledir"
-	picsDirFlagName        = "picsdir"
-	faceboxUrlFlagName     = "faceboxurl"
-	coolDownPeriodFlagName = "cooldown"
+	peopleDirFlag      = "peopledir"
+	picsDirFlag        = "picsdir"
+	faceboxUrlFlag     = "faceboxurl"
+	coolDownPeriodFlag = "cooldown"
 )
 
 var _logger = log.New(os.Stdout, "logger: ", log.Llongfile)
@@ -43,7 +45,7 @@ func main() {
 		_logger.Fatalln(msg)
 	}
 
-	// Let's connect to facebox.
+	// Let's connect to facebox and instantiate our fbox global variable.
 	fbox = facebox.New(conf.FaceboxUrl)
 
 	// Let's test the connection.
@@ -158,7 +160,7 @@ func collectPeoplePics(c *config) error {
 
 // createFoldersForPeople will create folders in current dir
 // where we are going to store the pictures of the people we want
-// to filter out from picsDirFlagName dir.
+// to filter out from picsDirFlag.
 func createFoldersForPeople(c *config) error {
 	for k, _ := range c.People {
 		path := filepath.Join(c.WorkingDir, k)
@@ -171,7 +173,7 @@ func createFoldersForPeople(c *config) error {
 }
 
 // teachFacebox will teach facebox instance about the people we want to recognize.
-// If the coolDownPeriodFlagName is true, we will wait five seconds to give enough
+// If the coolDownPeriodFlag is true, we will wait five seconds to give enough
 // time to facebox to assimilate the pictures.
 func teachFacebox(c *config) error {
 	for name, paths := range c.People {
@@ -192,6 +194,7 @@ func teachFacebox(c *config) error {
 
 	// if user wants to have the cooldown period, we sleep for 5 secs.
 	if c.CoolDownPeriod {
+		fmt.Println("There would be a cool down period of 5 seconds, please wait...")
 		time.Sleep(time.Second * 5)
 	}
 

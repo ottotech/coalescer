@@ -42,29 +42,29 @@ func (c *config) Validate() (ok bool, msg string) {
 
 	if c.PeopleDir == "" {
 		ok = false
-		msg += fmt.Sprintf("%s flag is not defined.\n", peopleDirFlagName)
+		msg += fmt.Sprintf("%s flag is not defined.\n", peopleDirFlag)
 	}
 	if c.PicsDir == "" {
 		ok = false
-		msg += fmt.Sprintf("%s flag is not defined.\n", picsDirFlagName)
+		msg += fmt.Sprintf("%s flag is not defined.\n", picsDirFlag)
 	}
 	if c.PeopleDir == c.PicsDir && c.PeopleDir != "" && c.PicsDir != "" {
 		ok = false
-		msg += fmt.Sprintf("the %s and %s flags cannot point to the same directory.\n", peopleDirFlagName, picsDirFlagName)
+		msg += fmt.Sprintf("the %s and %s flags cannot point to the same directory.\n", peopleDirFlag, picsDirFlag)
 	}
 	if info, err := os.Stat(c.PeopleDir); os.IsNotExist(err) {
 		ok = false
-		msg += fmt.Sprintf("directory %s specified by the flag %s does not exist.\n", c.PeopleDir, peopleDirFlagName)
+		msg += fmt.Sprintf("directory %s specified by the flag %s does not exist.\n", c.PeopleDir, peopleDirFlag)
 	} else if !info.IsDir() {
 		ok = false
-		msg += fmt.Sprintf("directory %s specified by the flag %s is not a directory.\n", c.PeopleDir, peopleDirFlagName)
+		msg += fmt.Sprintf("directory %s specified by the flag %s is not a directory.\n", c.PeopleDir, peopleDirFlag)
 	}
 	if info, err := os.Stat(c.PicsDir); os.IsNotExist(err) {
 		ok = false
-		msg += fmt.Sprintf("directory %s specified by the flag %s does not exist.\n", c.PicsDir, picsDirFlagName)
+		msg += fmt.Sprintf("directory %s specified by the flag %s does not exist.\n", c.PicsDir, picsDirFlag)
 	} else if !info.IsDir() {
 		ok = false
-		msg += fmt.Sprintf("directory %s specified by the flag %s is not a directory.\n", c.PicsDir, picsDirFlagName)
+		msg += fmt.Sprintf("directory %s specified by the flag %s is not a directory.\n", c.PicsDir, picsDirFlag)
 	}
 	if u, err := url.Parse(c.FaceboxUrl); err != nil {
 		ok = false
@@ -91,10 +91,10 @@ func parseFlags(programName string, args []string) (conf *config, output string,
 		return nil, buf.String(), err
 	}
 
-	flags.StringVar(&c.PeopleDir, peopleDirFlagName, "", "directory where we can find the photos of the people we want to recognize")
-	flags.StringVar(&c.PicsDir, picsDirFlagName, "", "directory where we can find all the photos we want to filter based on the people we want to recognize in peopledir")
-	flags.StringVar(&c.FaceboxUrl, faceboxUrlFlagName, "", "url pointing to your facebox machine instance")
-	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlagName, false, "if cooldown is true, coalescer will could down 5 seconds to let facebox assimilate the people's pictures")
+	flags.StringVar(&c.PeopleDir, peopleDirFlag, "", "directory where we can find the photos of the people we want to recognize")
+	flags.StringVar(&c.PicsDir, picsDirFlag, "", "directory where we can find all the photos we want to filter based on the people we want to recognize in peopledir")
+	flags.StringVar(&c.FaceboxUrl, faceboxUrlFlag, "", "url pointing to your facebox machine instance")
+	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlag, false, "if cooldown is true, coalescer will could down 5 seconds to let facebox assimilate the people's pictures")
 
 	err = flags.Parse(args)
 	if err != nil {
