@@ -39,7 +39,7 @@ func newConfig() (*config, error) {
 
 func (c *config) Initiate() {
 	// The confidence about a match of each picture should be a float64 value
-	// between 50 and 99, inclusive. (This value represents a percentage)
+	// between 50 and 99, inclusive. (This value is a percentage)
 	if c.Confidence < 50 || c.Confidence > 99 {
 		c.Confidence = 50 / 100
 	} else {
@@ -105,11 +105,11 @@ func parseFlags(programName string, args []string) (conf *config, output string,
 		return nil, buf.String(), err
 	}
 
-	flags.StringVar(&c.PeopleDir, peopleDirFlag, "", "directory where we can find the photos of the people we want to recognize")
-	flags.StringVar(&c.PicsDir, picsDirFlag, "", "directory where we can find all the photos we want to filter based on the people we want to recognize in peopledir")
-	flags.StringVar(&c.FaceboxUrl, faceboxUrlFlag, "", "url pointing to your facebox machine instance")
-	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlag, false, "if cooldown is true, coalescer will could down 5 seconds to let facebox assimilate the people's pictures")
-	flags.Float64Var(&c.Confidence, confidenceFlag, 50, "Determines how confident coalescer is about the match of each picture. It should be a value between 50 and 99, otherwise it will default to 50.")
+	flags.StringVar(&c.PeopleDir, peopleDirFlag, "", "Represents the dir where we can find the photos of the people we want to recognize.")
+	flags.StringVar(&c.PicsDir, picsDirFlag, "", "Represents the dir where we can find all the photos we want to filter based on the people we want to recognize in peopledir.")
+	flags.StringVar(&c.FaceboxUrl, faceboxUrlFlag, "", "Represents the url of the facebox machine instance.")
+	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlag, true, "Represents the cool down period needed to let facebox assimilate the people's pictures.")
+	flags.Float64Var(&c.Confidence, confidenceFlag, 50, "Determines how confident coalescer is about the match of each picture. It should be a value between 50 and 99.")
 
 	err = flags.Parse(args)
 	if err != nil {
