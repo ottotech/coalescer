@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// constant variables that represent the names of the flags that we are going to
+// Constant variables that represent the names of the flags that we are going to
 // use in the config struct and throughout the entire program.
 const (
 	peopleDirFlag      = "peopledir"
@@ -25,16 +25,25 @@ const (
 	faceboxUrlFlag     = "faceboxurl"
 	coolDownPeriodFlag = "cooldown"
 	confidenceFlag     = "confidence"
+	combineFlag        = "combine"
 )
 
-var _logger = log.New(os.Stdout, "logger: ", log.Llongfile)
+var _logger *log.Logger
 var fbox *facebox.Client
 
 func main() {
+	// Let's configure the logger.
+	logFile, err := os.OpenFile("./coalescer.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	_logger = log.New(logFile, "Coalescer Logger:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	defer logFile.Close()
+
 	// Let's parse the flags.
 	conf, output, err := parseFlags(os.Args[0], os.Args[1:])
 	if err == flag.ErrHelp {
-		fmt.Println(output)
+		fmt.Println("output:\n", output)
 		os.Exit(2)
 	} else if err != nil {
 		fmt.Println("output:\n", output)
@@ -43,7 +52,7 @@ func main() {
 
 	// Let's validate the configuration.
 	if ok, msg := conf.Validate(); !ok {
-		_logger.Fatalln(msg)
+		log.Fatalln(msg)
 	}
 
 	// Let's connect to facebox and instantiate our fbox global variable.
@@ -52,12 +61,12 @@ func main() {
 	// Let's test the connection.
 	_, err = fbox.Info()
 	if err != nil {
-		_logger.Fatalln(err)
+		log.Fatalln(err)
 	}
 
 	// Let's run the application.
 	if err := run(conf); err != nil {
-		_logger.Fatalln(err)
+		log.Fatalln(err)
 	}
 }
 
@@ -66,6 +75,16 @@ func run(c *config) error {
 	err := collectPeoplePics(c)
 	if err != nil {
 		return err
+	}
+
+	// We need to check if the client of the app wants to do multiple matches on each picture.
+	// If so, we need to check first if the passed names in config.People match the ones in
+	// config.PeopleCombination.
+	if c.MatchMultiple {
+		if success := c.CheckPeopleCombination(); !success {
+			return fmt.Errorf("there is a mismatch with the names of the people defined " +
+				"in peopledir and the flag combine")
+		}
 	}
 
 	// Let's create the folders for the pictures of the people we want to filter.
@@ -100,21 +119,35 @@ func run(c *config) error {
 		close(ch)
 	}()
 
-	for r := range ch {
-		fmt.Println(r.path)
-		fmt.Println(r.err)
+	reClassifier := make(map[string][]result)
+	const success = "success"
+	const fail = "fail"
+	for re := range ch {
+		if re.err == nil {
+			reClassifier[success] = append(reClassifier[success], re)
+		} else {
+			reClassifier[fail] = append(reClassifier[fail], re)
+		}
+	}
+
+	for _, failure := range reClassifier[fail] {
+		_logger.Printf("Failed to recognize people in file %s; got error %s", failure.path, failure.err)
+	}
+
+	for _, positiveResult := range reClassifier[success] {
+		_logger.Printf("Success to recognize people in file %s", positiveResult.path)
 	}
 
 	if err := <-errc; err != nil {
-		return err
+		return fmt.Errorf("we couldn't check all the picture in picsdir; got err %s", err)
 	}
 
 	return nil
 }
 
 // collectPeoplePics walks through the people's dir and get the people's pictures that we want
-// to recognize, and stores the peoples' names and files paths in the *config.People map where
-// the key of the map is the name of a person and its value a slice with the paths of the pictures
+// to recognize, and stores the peoples' names and files paths in config.People map. Where each
+// key of the map will be the name of a person and its value a slice with the paths of the pictures
 // of that person.
 func collectPeoplePics(c *config) error {
 	err := filepath.Walk(c.PeopleDir, func(path string, info os.FileInfo, err error) error {
@@ -160,10 +193,23 @@ func collectPeoplePics(c *config) error {
 	return err
 }
 
-// createFoldersForPeople will create folders in current dir
+// createFoldersForPeople will create folders in the current dir
 // where we are going to store the pictures of the people we want
-// to filter out from picsDirFlag.
+// to filter out from picsDirFlag. If config.MatchMultiple option is true
+// instead of creating multiple folders for each person that we are going to recognize,
+// createFoldersForPeople will create one folder out of the names of the multiple
+// people we want to recognize per picture. The names will be gotten from config.PeopleCombined.
 func createFoldersForPeople(c *config) error {
+	if c.MatchMultiple {
+		folderName := strings.Join(c.PeopleCombined, "_")
+		path := filepath.Join(c.WorkingDir, folderName)
+		err := os.MkdirAll(path, 0755)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	for k, _ := range c.People {
 		path := filepath.Join(c.WorkingDir, k)
 		err := os.MkdirAll(path, 0755)
@@ -194,9 +240,8 @@ func teachFacebox(c *config) error {
 		}
 	}
 
-	// if user wants to have the cooldown period, we sleep for 5 secs.
 	if c.CoolDownPeriod {
-		fmt.Println("There would be a cool down period of 5 seconds, please wait...")
+		fmt.Println("There would be a cooldown period of 5 seconds, please wait...")
 		time.Sleep(time.Second * 5)
 	}
 
@@ -281,14 +326,25 @@ func recognizeAndCopy(conf *config, path string) error {
 		return err
 	}
 
-	// We will loop through the recognized faces and check if there is a match.
 	match := false
-	for _, face := range faces {
-		if face.Matched && conf.People.exists(face.Name) {
-			if face.Confidence < conf.Confidence {
-				continue
+
+	if conf.MatchMultiple {
+		matchesCount := make([]bool, 0)
+		for _, name := range conf.PeopleCombined {
+			itMatches := false
+			for _, face := range faces {
+				if face.Matched && face.Name == name {
+					if face.Confidence < conf.Confidence {
+						continue
+					}
+					itMatches = true
+					break
+				}
 			}
-			nfPath := filepath.Join(conf.WorkingDir, face.Name, filepath.Base(path))
+			matchesCount = append(matchesCount, itMatches)
+		}
+		if allTrue(matchesCount) {
+			nfPath := filepath.Join(conf.WorkingDir, strings.Join(conf.PeopleCombined, "_"), filepath.Base(path))
 			nf, err := os.Create(nfPath)
 			if err != nil {
 				return err
@@ -301,6 +357,31 @@ func recognizeAndCopy(conf *config, path string) error {
 			nf.Close()
 			match = true
 		}
+	} else {
+		for _, face := range faces {
+			if face.Matched && conf.People.exists(face.Name) {
+				if face.Confidence < conf.Confidence {
+					continue
+				}
+				nfPath := filepath.Join(conf.WorkingDir, face.Name, filepath.Base(path))
+				nf, err := os.Create(nfPath)
+				if err != nil {
+					return err
+				}
+				_, err = io.Copy(nf, file)
+				if err != nil {
+					nf.Close()
+					return err
+				}
+				nf.Close()
+				// We need to rewind the file so it can be read in the next iteration.
+				_, err = file.Seek(0, io.SeekStart)
+				if err != nil {
+					return fmt.Errorf("we couldn't rewind the file in the loop; got error %s", err)
+				}
+				match = true
+			}
+		}
 	}
 
 	if !match {
@@ -308,4 +389,14 @@ func recognizeAndCopy(conf *config, path string) error {
 	}
 
 	return nil
+}
+
+// allTrue checks whether all booleans in the given sl are True or not.
+func allTrue(sl []bool) bool {
+	for _, b := range sl {
+		if b == false {
+			return false
+		}
+	}
+	return true
 }

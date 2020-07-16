@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 )
 
 type PeopleToIdentify map[string][]string
@@ -15,14 +16,31 @@ func (p PeopleToIdentify) exists(name string) bool {
 	return exists
 }
 
+type PeopleCombination []string
+
+func (pc PeopleCombination) exists(name string) bool {
+	for _, s := range pc {
+		if name == s {
+			return true
+		}
+	}
+	return false
+}
+
 type config struct {
+	// flags.
 	PeopleDir      string
 	PicsDir        string
-	People         PeopleToIdentify
-	WorkingDir     string
-	FaceboxUrl     string
 	CoolDownPeriod bool
+	FaceboxUrl     string
+	WorkingDir     string
+	Combine        string
 	Confidence     float64
+
+	// custom data structures.
+	People         PeopleToIdentify
+	MatchMultiple  bool
+	PeopleCombined PeopleCombination
 }
 
 func newConfig() (*config, error) {
@@ -37,22 +55,34 @@ func newConfig() (*config, error) {
 	return c, nil
 }
 
-func (c *config) Initiate() {
+// Transform will transform some fields in config.
+// We need to be smart when and where to use Transform. See Validate().
+func (c *config) Transform() {
 	// The confidence about a match of each picture should be a float64 value
-	// between 50 and 99, inclusive. (This value is a percentage)
-	if c.Confidence < 50 || c.Confidence > 99 {
+	// between 1 and 99, inclusive. (This value would be represented as a percentage)
+	if c.Confidence < 1 || c.Confidence > 99 {
 		c.Confidence = 50 / 100
 	} else {
 		c.Confidence = c.Confidence / 100
 	}
+
+	// Let's get the names of the people the user wants to combine when checking faces in each picture.
+	c.PeopleCombined = strings.Split(c.Combine, ",")
+
+	// If there are people names in config.PeopleCombination we can then set config.Combination = true.
+	// We need this so we can change the behaviour of our program later when checking for faces.
+	if len(c.PeopleCombined) > 1 {
+		c.MatchMultiple = true
+	}
 }
 
+// Validate validates the config fields.
 func (c *config) Validate() (ok bool, msg string) {
 	ok = true
 	msg += "\n"
 
-	// Let's initiate any default value or behaviour for the fields in config.
-	c.Initiate()
+	// Let's transform any default value or behaviour for the fields in config.
+	c.Transform()
 
 	if c.PeopleDir == "" {
 		ok = false
@@ -89,10 +119,33 @@ func (c *config) Validate() (ok bool, msg string) {
 			msg += fmt.Sprint("malformed FaceboxUrl. try something like: http://localhost:8080")
 		}
 	}
+	if c.Combine != "" && len(c.PeopleCombined) == 1 {
+		msg += "If you want to match multiple people in each picture you need to at least define two names " +
+			"in the combine flag."
+	}
 	if !ok {
 		msg += "For more information about the flags of this program, please run ./coalescer -h"
 	}
 	return
+}
+
+// CheckPeopleCombination checks whether the people defined in config.PeopleCombination can be
+// recognized. It does the checking by comparing the peoples' names from config.People
+// and config.PeopleCombination.
+func (c *config) CheckPeopleCombination() (success bool) {
+	for name, _ := range c.People {
+		exists := false
+		for _, s := range c.PeopleCombined {
+			if name == s {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			return false
+		}
+	}
+	return true
 }
 
 func parseFlags(programName string, args []string) (conf *config, output string, err error) {
@@ -108,8 +161,9 @@ func parseFlags(programName string, args []string) (conf *config, output string,
 	flags.StringVar(&c.PeopleDir, peopleDirFlag, "", "Represents the dir where we can find the photos of the people we want to recognize.")
 	flags.StringVar(&c.PicsDir, picsDirFlag, "", "Represents the dir where we can find all the photos we want to filter based on the people we want to recognize in peopledir.")
 	flags.StringVar(&c.FaceboxUrl, faceboxUrlFlag, "", "Represents the url of the facebox machine instance.")
-	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlag, true, "Represents the cool down period needed to let facebox assimilate the people's pictures.")
-	flags.Float64Var(&c.Confidence, confidenceFlag, 50, "Determines how confident coalescer is about the match of each picture. It should be a value between 50 and 99.")
+	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlag, true, "Represents the cooldown period needed to let facebox assimilate the people's pictures.")
+	flags.Float64Var(&c.Confidence, confidenceFlag, 50, "Determines how confident coalescer is about the match of each picture. It should be a value between 1 and 99.")
+	flags.StringVar(&c.Combine, combineFlag, "", "Specifies the names of the people you want to recognize in each picture. Use this if you want to do a multiple match.")
 
 	err = flags.Parse(args)
 	if err != nil {
