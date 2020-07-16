@@ -18,7 +18,7 @@ import (
 )
 
 // constant variables that represent the names of the flags that we are going to
-// user in config and throughout the entire program.
+// use in the config struct and throughout the entire program.
 const (
 	peopleDirFlag      = "peopledir"
 	picsDirFlag        = "picsdir"
