@@ -24,6 +24,7 @@ const (
 	picsDirFlag        = "picsdir"
 	faceboxUrlFlag     = "faceboxurl"
 	coolDownPeriodFlag = "cooldown"
+	confidenceFlag     = "confidence"
 )
 
 var _logger = log.New(os.Stdout, "logger: ", log.Llongfile)
@@ -112,8 +113,9 @@ func run(c *config) error {
 }
 
 // collectPeoplePics walks through the people's dir and get the people's pictures that we want
-// to recognize, and stores the people's name and file path in the *config.People map. Where
-// the key is the name of a person and the value a slice with the pictures filename of that person.
+// to recognize, and stores the peoples' names and files paths in the *config.People map where
+// the key of the map is the name of a person and its value a slice with the paths of the pictures
+// of that person.
 func collectPeoplePics(c *config) error {
 	err := filepath.Walk(c.PeopleDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -201,11 +203,15 @@ func teachFacebox(c *config) error {
 	return nil
 }
 
+// result represents a result of trying to recognize people in a particular path.
 type result struct {
 	path string
 	err  error
 }
 
+// walkFiles starts a goroutine to walk the directory tree at root and send the
+// path of each regular file on the string channel. It send the result of the
+// walk on the error channel. If done is closed, walkFiles abandons its work.
 func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) {
 	paths := make(chan string)
 	errc := make(chan error, 1)
@@ -276,8 +282,12 @@ func recognizeAndCopy(conf *config, path string) error {
 	}
 
 	// We will loop through the recognized faces and check if there is a match.
+	match := false
 	for _, face := range faces {
 		if face.Matched && conf.People.exists(face.Name) {
+			if face.Confidence < conf.Confidence {
+				continue
+			}
 			nfPath := filepath.Join(conf.WorkingDir, face.Name, filepath.Base(path))
 			nf, err := os.Create(nfPath)
 			if err != nil {
@@ -289,7 +299,13 @@ func recognizeAndCopy(conf *config, path string) error {
 				return err
 			}
 			nf.Close()
+			match = true
 		}
 	}
+
+	if !match {
+		return fmt.Errorf("there is no match with a confidence %.2f", conf.Confidence)
+	}
+
 	return nil
 }
