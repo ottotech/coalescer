@@ -59,6 +59,7 @@ func main() {
 	}
 }
 
+// run runs our main program logic with the given config options.
 func run(c *config) error {
 	// Let's collect the people's pictures that we want to recognize.
 	err := collectPeoplePics(c)
@@ -76,7 +77,7 @@ func run(c *config) error {
 		}
 	}
 
-	// Let's create the folders for the pictures of the people we want to filter.
+	// Let's create the folders for the pictures of the people we want to filter out.
 	err = createFoldersForPeople(c)
 	if err != nil {
 		return err
@@ -269,6 +270,8 @@ func walkFiles(done <-chan struct{}, root string) (<-chan string, <-chan error) 
 	return paths, errc
 }
 
+// digester reads path names from paths and sends digests of the corresponding
+// files on c until either paths or done is closed.
 func digester(conf *config, done <-chan struct{}, paths <-chan string, c chan<- result) {
 	for path := range paths {
 		err := recognizeAndCopy(conf, path)
@@ -280,6 +283,11 @@ func digester(conf *config, done <-chan struct{}, paths <-chan string, c chan<- 
 	}
 }
 
+// recognizeAndCopy tries to recognize people in a picture located in the given path.
+// If it succeeds to do so recognizeAndCopy will copy the picture in the corresponding
+// path for all recognized pictures.
+// TODO: It might be a good idea to factor out the logic when conf.MatchMultiple is True or False.
+// TODO: I need to put more thoughts on this, but for now it works :)
 func recognizeAndCopy(conf *config, path string) error {
 	fullPath := filepath.Join(conf.WorkingDir, path)
 	file, err := os.Open(fullPath)
