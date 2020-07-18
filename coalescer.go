@@ -248,7 +248,7 @@ func teachFacebox(c *config) error {
 	return nil
 }
 
-// result represents a result of trying to recognize people in a particular path.
+// result represents a result of trying to recognize people from a picture in a particular path.
 type result struct {
 	path string
 	err  error
@@ -391,7 +391,7 @@ func recognizeAndCopy(conf *config, path string) error {
 	return nil
 }
 
-// allTrue checks whether all booleans in the given sl are True or not.
+// allTrue checks whether all booleans in the given slice are True or not.
 func allTrue(sl []bool) bool {
 	for _, b := range sl {
 		if b == false {
