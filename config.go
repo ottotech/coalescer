@@ -28,7 +28,7 @@ func (pc PeopleCombination) exists(name string) bool {
 }
 
 type config struct {
-	// flags.
+	// fields that represent the flags used by this program.
 	PeopleDir      string
 	PicsDir        string
 	CoolDownPeriod bool
@@ -37,10 +37,11 @@ type config struct {
 	Combine        string
 	Confidence     float64
 
-	// custom data structures.
-	People         PeopleToIdentify
-	MatchMultiple  bool
-	PeopleCombined PeopleCombination
+	// custom fields.
+	People                PeopleToIdentify
+	PeopleCombined        PeopleCombination
+	PeopleCombinedDirName string
+	MatchMultiple         bool
 }
 
 func newConfig() (*config, error) {
@@ -56,7 +57,7 @@ func newConfig() (*config, error) {
 }
 
 // Transform will transform some fields in config.
-// We need to be smart when and where to use Transform. See Validate().
+// We need to be smart when and where to use Transform. See config.Validate().
 func (c *config) Transform() {
 	// The confidence about a match of each picture should be a float64 value
 	// between 1 and 99, inclusive. (This value would be represented as a percentage)
@@ -69,10 +70,18 @@ func (c *config) Transform() {
 	// Let's get the names of the people the user wants to combine when checking faces in each picture.
 	c.PeopleCombined = strings.Split(c.Combine, ",")
 
-	// If there are people names in config.PeopleCombination we can then set config.Combination = true.
-	// We need this so we can change the behaviour of our program later when checking for faces.
+	// If there are people names in config.PeopleCombination we can then set config.MatchMultiple = true.
+	// We do this because we can implicitly understand that the user want's to recognize multiple people in each picture.
+	// So our program needs to read config.MatchMultiple so it can change the behaviour of the program later when
+	// checking for faces.
 	if len(c.PeopleCombined) > 1 {
 		c.MatchMultiple = true
+	}
+
+	// If the user wants to recognize multiple people in each picture, we need to create custom directory so that
+	// coalescer can store the filtered picture there.
+	if c.MatchMultiple {
+		c.PeopleCombinedDirName = strings.Join(c.PeopleCombined, "_")
 	}
 }
 
@@ -81,7 +90,7 @@ func (c *config) Validate() (ok bool, msg string) {
 	ok = true
 	msg += "\n"
 
-	// Let's transform any default value or behaviour for the fields in config.
+	// Let's transform any default value or behaviour for our custom fields in config.
 	c.Transform()
 
 	if c.PeopleDir == "" {

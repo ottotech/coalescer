@@ -2,9 +2,8 @@
 .idea
 *.DB_Store
 data
-config.json
 error.log
 coverage.out
-people_dir
-pics_dir
 otto
+coalescer.log
+*/*

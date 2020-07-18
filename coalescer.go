@@ -130,12 +130,12 @@ func run(c *config) error {
 		}
 	}
 
-	for _, failure := range reClassifier[fail] {
-		_logger.Printf("Failed to recognize people in file %s; got error %s", failure.path, failure.err)
-	}
-
 	for _, positiveResult := range reClassifier[success] {
 		_logger.Printf("Success to recognize people in file %s", positiveResult.path)
+	}
+
+	for _, failure := range reClassifier[fail] {
+		_logger.Printf("Failed to recognize people in file %s; got error %s", failure.path, failure.err)
 	}
 
 	if err := <-errc; err != nil {
@@ -201,8 +201,7 @@ func collectPeoplePics(c *config) error {
 // people we want to recognize per picture. The names will be gotten from config.PeopleCombined.
 func createFoldersForPeople(c *config) error {
 	if c.MatchMultiple {
-		folderName := strings.Join(c.PeopleCombined, "_")
-		path := filepath.Join(c.WorkingDir, folderName)
+		path := filepath.Join(c.WorkingDir, c.PeopleCombinedDirName)
 		err := os.MkdirAll(path, 0755)
 		if err != nil {
 			return err
@@ -344,7 +343,7 @@ func recognizeAndCopy(conf *config, path string) error {
 			matchesCount = append(matchesCount, itMatches)
 		}
 		if allTrue(matchesCount) {
-			nfPath := filepath.Join(conf.WorkingDir, strings.Join(conf.PeopleCombined, "_"), filepath.Base(path))
+			nfPath := filepath.Join(conf.WorkingDir, conf.PeopleCombinedDirName, filepath.Base(path))
 			nf, err := os.Create(nfPath)
 			if err != nil {
 				return err
