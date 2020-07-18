@@ -3,7 +3,7 @@ coalescer
 
 ## Overview
 coalescer is a CLI tool written in Go that allows you to recognize people in images from a directory and 
-coalesce the pictures when there is a match in a new location.
+coalesce the pictures to a new location when there is a match.
 
 coalescer uses under the hood [facebox](https://machinebox.io/docs/facebox) by [machinebox](https://machinebox.io/). 
 This is an awesome tool for face recognition written in GO with a clear and easy-to-use Api. coalescer uses facebox to 
