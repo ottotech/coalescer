@@ -9,6 +9,17 @@ import (
 	"strings"
 )
 
+// Constant variables that represent the names of the flags that we are going to
+// use in the config struct and throughout the entire program.
+const (
+	peopleDirFlag      = "peopledir"
+	picsDirFlag        = "picsdir"
+	faceboxUrlFlag     = "faceboxurl"
+	coolDownPeriodFlag = "cooldown"
+	confidenceFlag     = "confidence"
+	combineFlag        = "combine"
+)
+
 type PeopleToIdentify map[string][]string
 
 func (p PeopleToIdentify) exists(name string) bool {
@@ -139,12 +150,12 @@ func (c *config) Validate() (ok bool, msg string) {
 }
 
 // CheckPeopleCombination checks whether the people defined in config.PeopleCombination can be
-// recognized. It does the checking by comparing the peoples' names from config.People
-// and config.PeopleCombination.
+// recognized. It does the checking by comparing the peoples' names from config.PeopleCombination
+// and config.People.
 func (c *config) CheckPeopleCombination() (success bool) {
-	for name, _ := range c.People {
+	for _, name := range c.PeopleCombined {
 		exists := false
-		for _, s := range c.PeopleCombined {
+		for s := range c.People {
 			if name == s {
 				exists = true
 				break

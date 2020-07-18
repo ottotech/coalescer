@@ -17,17 +17,6 @@ import (
 	"time"
 )
 
-// Constant variables that represent the names of the flags that we are going to
-// use in the config struct and throughout the entire program.
-const (
-	peopleDirFlag      = "peopledir"
-	picsDirFlag        = "picsdir"
-	faceboxUrlFlag     = "faceboxurl"
-	coolDownPeriodFlag = "cooldown"
-	confidenceFlag     = "confidence"
-	combineFlag        = "combine"
-)
-
 var _logger *log.Logger
 var fbox *facebox.Client
 
@@ -58,7 +47,7 @@ func main() {
 	// Let's connect to facebox and instantiate our fbox global variable.
 	fbox = facebox.New(conf.FaceboxUrl)
 
-	// Let's test the connection.
+	// Let's test the connection with facebox.
 	_, err = fbox.Info()
 	if err != nil {
 		log.Fatalln(err)
