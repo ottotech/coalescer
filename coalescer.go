@@ -183,12 +183,10 @@ func collectPeoplePics(c *config) error {
 	return err
 }
 
-// createFoldersForPeople will create folders in the current dir
-// where we are going to store the pictures of the people we want
-// to filter out from picsDirFlag. If config.MatchMultiple option is true
-// instead of creating multiple folders for each person that we are going to recognize,
-// createFoldersForPeople will create one folder out of the names of the multiple
-// people we want to recognize per picture. The names will be gotten from config.PeopleCombined.
+// createFoldersForPeople will create folders in the current dir where we are going to store
+// the pictures of the people we want to filter out from picsDirFlag. If config.MatchMultiple
+// option is true instead of creating multiple folders for each person that we are going to recognize,
+// createFoldersForPeople will create one folder with the name defined in config.PeopleCombinedDirName.
 func createFoldersForPeople(c *config) error {
 	if c.MatchMultiple {
 		path := filepath.Join(c.WorkingDir, c.PeopleCombinedDirName)
