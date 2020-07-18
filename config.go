@@ -55,6 +55,7 @@ type config struct {
 	MatchMultiple         bool
 }
 
+// newConfig initializes a ready to use config struct.
 func newConfig() (*config, error) {
 	wdir, err := os.Getwd()
 	if err != nil {
