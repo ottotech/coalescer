@@ -69,7 +69,7 @@ func run(c *config) error {
 
 	// We need to check if the client of the app wants to do multiple matches on each picture.
 	// If so, we need to check first if the passed names in config.People match the ones in
-	// config.PeopleCombination.
+	// config.PeopleCombined.
 	if c.MatchMultiple {
 		if success := c.CheckPeopleCombination(); !success {
 			return fmt.Errorf("there is a mismatch with the names of the people defined " +
@@ -136,7 +136,7 @@ func run(c *config) error {
 }
 
 // collectPeoplePics walks through the people's dir and get the people's pictures that we want
-// to recognize, and stores the peoples' names and files paths in config.People map. Where each
+// to recognize, and stores the peoples' names and files' paths in config.People map. Where each
 // key of the map will be the name of a person and its value a slice with the paths of the pictures
 // of that person.
 func collectPeoplePics(c *config) error {
@@ -184,7 +184,7 @@ func collectPeoplePics(c *config) error {
 }
 
 // createFoldersForPeople will create folders in the current dir where we are going to store
-// the pictures of the people we want to filter out from picsDirFlag. If config.MatchMultiple
+// the pictures of the people we want to recognize. If config.MatchMultiple
 // option is true instead of creating multiple folders for each person that we are going to recognize,
 // createFoldersForPeople will create one folder with the name defined in config.PeopleCombinedDirName.
 func createFoldersForPeople(c *config) error {
@@ -207,7 +207,7 @@ func createFoldersForPeople(c *config) error {
 	return nil
 }
 
-// teachFacebox will teach facebox instance about the people we want to recognize.
+// teachFacebox will teach the facebox instance about the people we want to recognize.
 // If the coolDownPeriodFlag is true, we will wait five seconds to give enough
 // time to facebox to assimilate the pictures.
 func teachFacebox(c *config) error {
@@ -235,7 +235,7 @@ func teachFacebox(c *config) error {
 	return nil
 }
 
-// result represents a result of trying to recognize people from a picture in a particular path.
+// result represents the result of trying to recognize people from a picture in a particular path.
 type result struct {
 	path string
 	err  error
