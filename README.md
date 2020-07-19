@@ -134,6 +134,8 @@ using coalescer.
 cases of coalescer that's more than enough. If you of course need a higher limit you can consider upgrade your machinebox
 account.
 
+- coalescer uses some concurrent and parallelism patterns described in [this go blog](https://blog.golang.org/pipelines)
+
 - I won't be actively improving this repo, but from time to time I will try to enhance it :)
 
 ## TODO
