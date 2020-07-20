@@ -18,6 +18,7 @@ const (
 	coolDownPeriodFlag = "cooldown"
 	confidenceFlag     = "confidence"
 	combineFlag        = "combine"
+	rigidFlag          = "rigid"
 )
 
 type PeopleToIdentify map[string][]string
@@ -47,6 +48,7 @@ type config struct {
 	WorkingDir     string
 	Combine        string
 	Confidence     float64
+	Rigid          bool
 
 	// custom fields.
 	People                PeopleToIdentify
@@ -185,6 +187,7 @@ func parseFlags(programName string, args []string) (conf *config, output string,
 	flags.BoolVar(&c.CoolDownPeriod, coolDownPeriodFlag, true, "Represents duration of the cooldown period needed to let facebox assimilate the people's pictures.")
 	flags.Float64Var(&c.Confidence, confidenceFlag, 50, "Determines how confident coalescer is about the match of each picture. It should be a value between 1 and 99.")
 	flags.StringVar(&c.Combine, combineFlag, "", "Specifies the names of the people you want to recognize in each picture. Use this if you want to do a multiple match.")
+	flags.BoolVar(&c.Rigid, rigidFlag, false, "Specifies that in order to have a valid match all faces should appear in each picture exclusively.")
 
 	err = flags.Parse(args)
 	if err != nil {

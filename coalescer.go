@@ -321,6 +321,7 @@ func recognizeAndCopy(conf *config, path string) error {
 	}
 
 	match := false
+	rigidFail := false
 
 	if conf.MatchMultiple {
 		matchesCount := make([]bool, 0)
@@ -337,6 +338,10 @@ func recognizeAndCopy(conf *config, path string) error {
 			}
 			matchesCount = append(matchesCount, itMatches)
 		}
+		if conf.Rigid && len(faces) != len(conf.PeopleCombined) {
+			rigidFail = true
+			goto RigidFail
+		}
 		if allTrue(matchesCount) {
 			nfPath := filepath.Join(conf.WorkingDir, conf.PeopleCombinedDirName, filepath.Base(path))
 			nf, err := os.Create(nfPath)
@@ -352,6 +357,10 @@ func recognizeAndCopy(conf *config, path string) error {
 			match = true
 		}
 	} else {
+		if conf.Rigid && len(faces) > 1 {
+			rigidFail = true
+			goto RigidFail
+		}
 		for _, face := range faces {
 			if face.Matched && conf.People.exists(face.Name) {
 				if face.Confidence < conf.Confidence {
@@ -377,9 +386,12 @@ func recognizeAndCopy(conf *config, path string) error {
 			}
 		}
 	}
-
 	if !match {
 		return fmt.Errorf("there is no match with a confidence %.2f", conf.Confidence)
+	}
+RigidFail:
+	if rigidFail {
+		return fmt.Errorf("there is no rigid match with a confidence %.2f", conf.Confidence)
 	}
 
 	return nil
