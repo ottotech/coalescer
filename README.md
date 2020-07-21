@@ -109,8 +109,8 @@ recognize in each picture. The directory name in this case will be: irene_otto.
 Inside the irene_otto directory you should see the following picture:
 -  irene_and_otto_x.jpg
 
-So in this example, when you use the *-combine* flag coalescer will check if each picture inside *pics_dic* has the faces
-of all the people defined inside *people_dic*. coalescer will use an AND gate logic to filter out the pictures. If there
+So in this example, when you use the *-combine* flag coalescer will check if each picture inside *pics_dir* has the faces
+of all the people defined inside *people_dir*. coalescer will use an AND gate logic to filter out the pictures. If there
 is a match coalescer will copy each picture to a single folder which has a name composed by all the names of the people
 you want to recognize.
 
