@@ -143,6 +143,7 @@ func (c *config) Validate() (ok bool, msg string) {
 		}
 	}
 	if c.Combine != "" && len(c.PeopleCombined) == 1 {
+		ok = false
 		msg += "If you want to match multiple people in each picture you need to at least define two names " +
 			"in the combine flag."
 	}
