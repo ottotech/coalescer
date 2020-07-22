@@ -222,3 +222,31 @@ func TestConfig_CheckPeopleCombination(t *testing.T) {
 		t.Errorf("CheckPeopleCombination should have returned true got %t instead", success)
 	}
 }
+
+func TestParseFlags(t *testing.T) {
+	args := []string{
+		"-peopledir=people_dir",
+		"-picsdir=pics_dir",
+		"-faceboxurl=http://localhost:8080",
+	}
+	conf, output, err := parseFlags("coalescer", args)
+	if err != nil {
+		t.Errorf("parseFlags shouldn't fail; got this error %s with this output %s", err, output)
+	}
+
+	if conf.PeopleDir != "people_dir" {
+		t.Errorf("conf should have this value (\"people_dir\") on field PeopleDir; got %s instead.", conf.PeopleDir)
+	}
+
+	if conf.PicsDir != "pics_dir" {
+		t.Errorf("conf should have this value (\"pics_dir\") on field PicsDir; got %s instead.", conf.PicsDir)
+	}
+
+	if conf.FaceboxUrl != "http://localhost:8080" {
+		t.Errorf("conf should have this value (\"http://localhost:8080\") on field FaceboxUrl; got %s instead.", conf.FaceboxUrl)
+	}
+
+	if ok, msg := conf.Validate(); !ok {
+		t.Errorf("conf should be valid got this message: %s", msg)
+	}
+}
