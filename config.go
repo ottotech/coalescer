@@ -157,6 +157,9 @@ func (c *config) Validate() (ok bool, msg string) {
 // recognized. It does the checking by comparing the peoples' names from config.PeopleCombined
 // and config.People.
 func (c *config) CheckPeopleCombination() (success bool) {
+	if len(c.PeopleCombined) != len(c.People) {
+		return false
+	}
 	for _, name := range c.PeopleCombined {
 		exists := false
 		for s := range c.People {

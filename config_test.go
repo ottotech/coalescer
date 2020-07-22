@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -189,5 +190,37 @@ func TestConfig_Validate(t *testing.T) {
 				t.Errorf("conf should be valid when testing scenario (%s)", scenario.desc)
 			}
 		}
+	}
+}
+
+func TestConfig_CheckPeopleCombination(t *testing.T) {
+	c, err := newConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// In order to test the conf method CheckPeopleCombination we just need to reference some fields
+	// in the config struct: PeopleCombined and People. So we will just manually set those values for
+	// testing purposes.
+	c.PeopleCombined = []string{"pepe", "julia"}
+	p := make(PeopleToIdentify, 0)
+	p["pepe"] = append(p["pepe"], "/some-path")
+	p["julia"] = append(p["pepe"], "/some-path")
+	c.People = p
+
+	// Because the people stored in the map field People are also map in the field PeopleCombined
+	// CheckPeopleCombination shouldn't fail.
+	if success := c.CheckPeopleCombination(); !success {
+		t.Errorf("CheckPeopleCombination should have returned true got %t instead", success)
+	}
+
+	// Now let's try to remove pepe from the field PeopleCombined.
+	c.PeopleCombined = c.PeopleCombined[1:]
+
+	fmt.Println(c.PeopleCombined)
+	// Because we modified the field PeopleCombined with line from above  CheckPeopleCombination
+	// should fail now.
+	if success := c.CheckPeopleCombination(); success {
+		t.Errorf("CheckPeopleCombination should have returned false got %t instead", success)
 	}
 }
