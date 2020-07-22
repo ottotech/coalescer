@@ -210,15 +210,15 @@ func TestConfig_CheckPeopleCombination(t *testing.T) {
 	// Because the people stored in the map field People are also map in the field PeopleCombined
 	// CheckPeopleCombination shouldn't fail.
 	if success := c.CheckPeopleCombination(); !success {
-		t.Errorf("CheckPeopleCombination should have returned true got %t instead", success)
+		t.Errorf("CheckPeopleCombination should have returned false got %t instead", success)
 	}
 
 	// Now let's try to remove pepe from the field PeopleCombined.
 	c.PeopleCombined = c.PeopleCombined[1:]
 
-	// Because we modified the field PeopleCombined with line from above  CheckPeopleCombination
+	// Because we modified the field PeopleCombined with the line from above CheckPeopleCombination
 	// should fail now.
 	if success := c.CheckPeopleCombination(); success {
-		t.Errorf("CheckPeopleCombination should have returned false got %t instead", success)
+		t.Errorf("CheckPeopleCombination should have returned true got %t instead", success)
 	}
 }
