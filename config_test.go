@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -217,7 +216,6 @@ func TestConfig_CheckPeopleCombination(t *testing.T) {
 	// Now let's try to remove pepe from the field PeopleCombined.
 	c.PeopleCombined = c.PeopleCombined[1:]
 
-	fmt.Println(c.PeopleCombined)
 	// Because we modified the field PeopleCombined with line from above  CheckPeopleCombination
 	// should fail now.
 	if success := c.CheckPeopleCombination(); success {
