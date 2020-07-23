@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/machinebox/sdk-go/boxutil"
 	"github.com/machinebox/sdk-go/facebox"
 	"image"
 	_ "image/jpeg"
@@ -17,8 +18,14 @@ import (
 	"time"
 )
 
+type recognizer interface {
+	Teach(image io.Reader, id string, name string) error
+	Check(image io.Reader) ([]facebox.Face, error)
+	Info() (*boxutil.Info, error)
+}
+
 var _logger *log.Logger
-var fbox *facebox.Client
+var fbox recognizer
 
 func main() {
 	// Let's configure the logger.
