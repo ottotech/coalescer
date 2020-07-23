@@ -24,10 +24,10 @@ var testFilesMapSha = map[string]string{
 	"b13cba3f6478673bee294c3e99f6e0196616e1d7": "mark_and_bill.jpg",
 }
 
-type mockNOCombination struct {
+type mockRecognizer struct {
 }
 
-func (c *mockNOCombination) Info() (*boxutil.Info, error) {
+func (c *mockRecognizer) Info() (*boxutil.Info, error) {
 	return &boxutil.Info{
 		Name:    "xx",
 		Version: 0,
@@ -36,11 +36,11 @@ func (c *mockNOCombination) Info() (*boxutil.Info, error) {
 	}, nil
 }
 
-func (c *mockNOCombination) Teach(image io.Reader, id string, name string) error {
+func (c *mockRecognizer) Teach(image io.Reader, id string, name string) error {
 	return nil
 }
 
-func (c *mockNOCombination) Check(image io.Reader) ([]facebox.Face, error) {
+func (c *mockRecognizer) Check(image io.Reader) ([]facebox.Face, error) {
 	hash := sha1.New()
 
 	_, err := io.Copy(hash, image)
@@ -103,6 +103,11 @@ func Test_run_normal_usage_without_combination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got error (%s) while using parseFlags. Output was: %s", err, output)
 	}
+
+	if ok, msg := conf.Validate(); !ok {
+		t.Fatalf("conf.Validate() should be valid got message: %s", msg)
+	}
+
 	// Let's clean the directory after testing.
 	defer func() {
 		err := os.RemoveAll("bill")
@@ -115,13 +120,8 @@ func Test_run_normal_usage_without_combination(t *testing.T) {
 		}
 	}()
 
-	conf.FaceboxUrl = "http://localhost:8080"
-	conf.PicsDir = "pics_dir"
-	conf.PeopleDir = "people_dir"
-	conf.Confidence = 50
-
 	originalFacebox := fbox
-	fbox = &mockNOCombination{}
+	fbox = &mockRecognizer{}
 	defer func(original recognizer) {
 		fbox = original
 	}(originalFacebox)
@@ -142,6 +142,64 @@ func Test_run_normal_usage_without_combination(t *testing.T) {
 			"mark_and_bill.jpg",
 		},
 		"mark": {
+			"mark_and_bill.jpg",
+		},
+	}
+
+	for _, d := range dirs {
+		if _, err := os.Stat(d); os.IsNotExist(err) {
+			t.Fatalf("directory %s should exist", d)
+		}
+	}
+
+	for dir, pics := range pathPics {
+		for _, pic := range pics {
+			path := filepath.Join(dir, pic)
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				t.Errorf("picture %s should exist in path %s", pic, dir)
+			}
+		}
+	}
+}
+
+func Test_run_usage_with_combination(t *testing.T) {
+	conf, output, err := parseFlags("coalescer",
+		[]string{"-faceboxurl=http://localhost:8080",
+			"-peopledir=people_dir", "-picsdir=pics_dir", "-confidence=50", "-combine=bill,mark"})
+
+	if err != nil {
+		t.Fatalf("got error (%s) while using parseFlags. Output was: %s", err, output)
+	}
+
+	if ok, msg := conf.Validate(); !ok {
+		t.Fatalf("conf.Validate() should be valid got message: %s", msg)
+	}
+
+	// Let's clean the directory after testing.
+	defer func(dirname string) {
+		err := os.RemoveAll(dirname)
+		if err != nil {
+			log.Println(err)
+		}
+	}(conf.PeopleCombinedDirName)
+
+	originalFacebox := fbox
+	fbox = &mockRecognizer{}
+	defer func(original recognizer) {
+		fbox = original
+	}(originalFacebox)
+
+	err = run(conf)
+	if err != nil {
+		t.Errorf("run shouldn't fail; got this err %s", err)
+	}
+
+	dirs := []string{
+		"bill_mark",
+	}
+
+	pathPics := map[string][]string{
+		"bill_mark": {
 			"mark_and_bill.jpg",
 		},
 	}
