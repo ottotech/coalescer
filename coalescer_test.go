@@ -97,10 +97,24 @@ func (c *mockNOCombination) Check(image io.Reader) ([]facebox.Face, error) {
 }
 
 func Test_run_normal_usage_without_combination(t *testing.T) {
-	conf, err := newConfig()
+	conf, output, err := parseFlags("coalescer",
+		[]string{"-faceboxurl=http://localhost:8080", "-peopledir=people_dir", "-picsdir=pics_dir", "-confidence=50"})
+
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("got error (%s) while using parseFlags. Output was: %s", err, output)
 	}
+	// Let's clean the directory after testing.
+	defer func() {
+		err := os.RemoveAll("bill")
+		if err != nil {
+			log.Println(err)
+		}
+		err = os.RemoveAll("mark")
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
 	conf.FaceboxUrl = "http://localhost:8080"
 	conf.PicsDir = "pics_dir"
 	conf.PeopleDir = "people_dir"
