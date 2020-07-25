@@ -141,6 +141,11 @@ account.
 ## TODO
 - The logic inside the recognizeAndCopy func can be simplified.  
 
+## Standing on the shoulders of giants
+As I already mentioned, coalescer relies on the awesome [facebox](https://machinebox.io/docs/facebox) tool created
+by [machinebox](https://machinebox.io/). They have done a fantastic job in creating such a tool for face recognition 
+that is easy to use. Thank you.  
+
 ## License
 
 Copyright ©‎ 2020, [ottotech](https://ottotech.site/)
