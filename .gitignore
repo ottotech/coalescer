@@ -6,5 +6,4 @@ error.log
 coverage.out
 otto
 coalescer.log
-*/*
 .DS_Store
