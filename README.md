@@ -1,4 +1,4 @@
-coalescer
+coalescer [![Build Status](https://travis-ci.org/ottotech/coalescer.svg?branch=master)](https://travis-ci.org/ottotech/coalescer)
 =========
 
 ## Overview
