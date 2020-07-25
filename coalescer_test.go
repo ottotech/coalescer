@@ -50,13 +50,13 @@ func (c *mockRecognizer) Check(image io.Reader) ([]facebox.Face, error) {
 
 	fileSha := fmt.Sprintf("%x", hash.Sum(nil))
 
-	val, exists := testFilesMapSha[fileSha]
+	pic, exists := testFilesMapSha[fileSha]
 	if !exists {
 		return nil, fmt.Errorf("an unknown image was given to mockCombination while testing")
 	}
 
 	// In this image facebox should recognize 1 face.
-	if val == "bill_and_steve.jpg" {
+	if pic == "bill_and_steve.jpg" {
 		faces := []facebox.Face{
 			{
 				Rect:       facebox.Rect{},
@@ -71,7 +71,7 @@ func (c *mockRecognizer) Check(image io.Reader) ([]facebox.Face, error) {
 	}
 
 	// In this image facebox should recognize 2 faces.
-	if val == "mark_and_bill.jpg" {
+	if pic == "mark_and_bill.jpg" {
 		faces := []facebox.Face{
 			{
 				Rect:       facebox.Rect{},
