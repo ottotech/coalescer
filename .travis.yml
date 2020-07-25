@@ -1,0 +1,12 @@
+language: go
+go:
+  - "1.14.x"
+
+go_import_path: github.com/ottotech/coalescer
+
+before_install:
+  # Go get our deps.
+  - go get -v ./...
+
+script:
+  - go test -v .
