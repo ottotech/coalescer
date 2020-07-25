@@ -139,7 +139,6 @@ account.
 - I won't be actively improving this repo, but from time to time I will try to enhance it :)
 
 ## TODO
-- Tests (at this moment there are no tests, will try to find time to add them soon).
 - The logic inside the recognizeAndCopy func can be simplified.  
 
 ## License
