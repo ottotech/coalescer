@@ -6,4 +6,7 @@ error.log
 coverage.out
 otto
 coalescer.log
+*/*
+!people_dir
+!pics_dir
 .DS_Store
