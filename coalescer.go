@@ -136,7 +136,7 @@ func run(c *config) error {
 	}
 
 	if err := <-errc; err != nil {
-		return fmt.Errorf("we couldn't check all the picture in picsdir; got err %s", err)
+		return fmt.Errorf("we couldn't check all the pictures in picsdir; got err %s", err)
 	}
 
 	return nil
@@ -292,7 +292,7 @@ func digester(conf *config, done <-chan struct{}, paths <-chan string, c chan<- 
 // If it succeeds to do so recognizeAndCopy will copy the picture in the corresponding
 // path for all recognized pictures.
 // TODO: It might be a good idea to factor out the logic when conf.MatchMultiple is True or False.
-// TODO: I need to put more thoughts on this, but for now it works :)
+// TODO: I need to put more thought on this, but for now it works :)
 func recognizeAndCopy(conf *config, path string) error {
 	fullPath := filepath.Join(conf.WorkingDir, path)
 	file, err := os.Open(fullPath)
